@@ -14,3 +14,12 @@ CREATE TABLE Course (
     name VARCHAR(20) NOT NULL UNIQUE,
     description VARCHAR(500)
 );
+
+DROP TABLE IF EXISTS enrollment;
+
+ create table enrollment (
+        enrollment_date date,
+        course_id bigint not null,
+        user_id bigint not null,
+        primary key (course_id, user_id)
+ );

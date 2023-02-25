@@ -1,5 +1,6 @@
 package br.com.alura.school.course;
 
+import br.com.alura.school.user.UserRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -7,6 +8,7 @@ import org.springframework.web.server.ResponseStatusException;
 import javax.validation.Valid;
 import java.net.URI;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
@@ -16,13 +18,16 @@ class CourseController {
 
     private final CourseRepository courseRepository;
 
-    CourseController(CourseRepository courseRepository) {
+    private final UserRepository userRepository;
+
+    CourseController(CourseRepository courseRepository, UserRepository userRepository) {
         this.courseRepository = courseRepository;
+        this.userRepository = userRepository;
     }
 
     @GetMapping("/courses")
     ResponseEntity<List<CourseResponse>> allCourses() {
-        List<CourseResponse> courses = courseRepository.findAll().stream().map(CourseResponse::new).toList();
+        List<CourseResponse> courses = courseRepository.findAll().stream().map(CourseResponse::new).collect(Collectors.toList());
         return ResponseEntity.ok(courses);
     }
 
@@ -38,4 +43,5 @@ class CourseController {
         URI location = URI.create(format("/courses/%s", newCourseRequest.getCode()));
         return ResponseEntity.created(location).build();
     }
+
 }
