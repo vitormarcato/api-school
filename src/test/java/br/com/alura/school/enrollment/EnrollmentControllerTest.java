@@ -13,9 +13,12 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.hamcrest.Matchers.is;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -65,6 +68,48 @@ class EnrollmentControllerTest {
                         .content(jsonMapper.writeValueAsString(newEnrollmentRequest)))
                 .andDo(print())
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void should_retrieve_enrollments_quantity_grouped_by_user_email() throws Exception {
+        courseRepository.save(new Course("spring-1", "Spring Basics", "Spring Core and Spring MVC."));
+        courseRepository.save(new Course("spring-2", "Spring Boot", "Spring Boot"));
+
+        userRepository.save(new User("alex", "alex@email.com"));
+        userRepository.save(new User("ana", "ana@email.com"));
+
+        NewEnrollmentRequest newEnrollmentRequestAlex = new NewEnrollmentRequest("alex");
+        NewEnrollmentRequest newEnrollmentRequestAna = new NewEnrollmentRequest("ana");
+
+        mockMvc.perform(post("/courses/spring-1/enroll")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonMapper.writeValueAsString(newEnrollmentRequestAna)));
+
+        mockMvc.perform(post("/courses/spring-1/enroll")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonMapper.writeValueAsString(newEnrollmentRequestAlex)));
+
+        mockMvc.perform(post("/courses/spring-2/enroll")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonMapper.writeValueAsString(newEnrollmentRequestAlex)));
+
+
+        mockMvc.perform(get("/courses/enroll/report")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.length()", is(2)))
+                .andExpect(jsonPath("$[0].email", is("alex@email.com")))
+                .andExpect(jsonPath("$[0].quantidade_matriculas", is(2)))
+                .andExpect(jsonPath("$[1].email", is("ana@email.com")))
+                .andExpect(jsonPath("$[1].quantidade_matriculas", is(1)));
+    }
+
+    @Test
+    void should_retrieve_no_content_for_no_enrolled_users() throws Exception {
+        mockMvc.perform(get("/courses/enroll/report")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
     }
 
 }
