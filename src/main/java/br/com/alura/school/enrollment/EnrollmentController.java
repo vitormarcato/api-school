@@ -5,17 +5,14 @@ import br.com.alura.school.course.CourseRepository;
 import br.com.alura.school.user.User;
 import br.com.alura.school.user.UserRepository;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import javax.validation.Valid;
+import java.util.List;
 
 import static java.lang.String.format;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.*;
 
 @RestController
 class EnrollmentController {
@@ -44,5 +41,17 @@ class EnrollmentController {
         enrollmentRepository.save(enrollment);
 
         return ResponseEntity.created(null).build();
+    }
+
+    @GetMapping("/courses/enroll/report")
+    ResponseEntity<List<EnrollmentResponse>> allEnrollments() {
+
+        List<EnrollmentResponse> enrolments = enrollmentRepository.generateEnrollmentsReport();
+
+        if (enrolments.isEmpty()) {
+            throw new ResponseStatusException(NO_CONTENT, format("No enrolled users"));
+        }
+
+        return ResponseEntity.ok(enrolments);
     }
 }
