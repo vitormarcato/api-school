@@ -35,7 +35,7 @@ class UserControllerTest {
         userRepository.save(new User("ana", "ana@email.com"));
 
         mockMvc.perform(get("/users/ana")
-                .accept(MediaType.APPLICATION_JSON))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.username", is("ana")))
@@ -45,7 +45,7 @@ class UserControllerTest {
     @Test
     void not_found_when_user_does_not_exist() throws Exception {
         mockMvc.perform(get("/users/non-existent")
-                .accept(MediaType.APPLICATION_JSON))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }
 
@@ -54,10 +54,10 @@ class UserControllerTest {
         NewUserRequest newUser = new NewUserRequest("alex", "alex@email.com");
 
         mockMvc.perform(post("/users")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonMapper.writeValueAsString(newUser)))
-        .andExpect(status().isCreated())
-        .andExpect(header().string("Location", "/users/alex"));
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonMapper.writeValueAsString(newUser)))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", "/users/alex"));
     }
 
     @ParameterizedTest
@@ -75,34 +75,54 @@ class UserControllerTest {
         NewUserRequest newUser = new NewUserRequest(username, email);
 
         mockMvc.perform(post("/users")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonMapper.writeValueAsString(newUser)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonMapper.writeValueAsString(newUser)))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void should_not_allow_duplication_of_username() throws Exception {
-        userRepository.save(new User("maria", "maria@email.com"));
+    void bad_request_when_user_already_added() throws Exception {
+        userRepository.save(new User("alex", "alex@email.com"));
 
-        NewUserRequest newUser = new NewUserRequest("maria", "mary@alura.com.br");
+        NewUserRequest newUser = new NewUserRequest("alex", "alex@alura.com.br");
 
         mockMvc.perform(post("/users")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonMapper.writeValueAsString(newUser)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonMapper.writeValueAsString(newUser)))
                 .andDo(print())
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void should_not_allow_duplication_of_email() throws Exception {
-        userRepository.save(new User("john", "john@email.com"));
+    void bad_request_when_email_already_added() throws Exception {
+        userRepository.save(new User("alex", "alex@email.com"));
 
-        NewUserRequest newUser = new NewUserRequest("joao", "john@email.com");
+        NewUserRequest newUser = new NewUserRequest("bob", "alex@email.com");
 
         mockMvc.perform(post("/users")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonMapper.writeValueAsString(newUser)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonMapper.writeValueAsString(newUser)))
                 .andDo(print())
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void bad_request_when_no_username_provided() throws Exception {
+        NewUserRequest newUser = new NewUserRequest("", "alex@email.com");
+
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonMapper.writeValueAsString(newUser)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void bad_request_when_no_email_provided() throws Exception {
+        NewUserRequest newUser = new NewUserRequest("alex", "");
+
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonMapper.writeValueAsString(newUser)))
                 .andExpect(status().isBadRequest());
     }
 }
