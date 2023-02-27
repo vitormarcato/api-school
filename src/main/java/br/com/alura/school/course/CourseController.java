@@ -1,6 +1,5 @@
 package br.com.alura.school.course;
 
-import br.com.alura.school.user.UserRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -12,22 +11,25 @@ import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.NO_CONTENT;
 
 @RestController
 class CourseController {
 
     private final CourseRepository courseRepository;
 
-    private final UserRepository userRepository;
-
-    CourseController(CourseRepository courseRepository, UserRepository userRepository) {
+    CourseController(CourseRepository courseRepository) {
         this.courseRepository = courseRepository;
-        this.userRepository = userRepository;
     }
 
     @GetMapping("/courses")
     ResponseEntity<List<CourseResponse>> allCourses() {
         List<CourseResponse> courses = courseRepository.findAll().stream().map(CourseResponse::new).collect(Collectors.toList());
+
+        if (courses.isEmpty()) {
+            throw new ResponseStatusException(NO_CONTENT, "No courses found");
+        }
+
         return ResponseEntity.ok(courses);
     }
 

@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -32,7 +33,7 @@ class CourseControllerTest {
         courseRepository.save(new Course("java-1", "Java OO", "Java and Object Orientation: Encapsulation, Inheritance and Polymorphism."));
 
         mockMvc.perform(get("/courses/java-1")
-                .accept(MediaType.APPLICATION_JSON))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.code", is("java-1")))
@@ -46,7 +47,7 @@ class CourseControllerTest {
         courseRepository.save(new Course("spring-2", "Spring Boot", "Spring Boot"));
 
         mockMvc.perform(get("/courses")
-                .accept(MediaType.APPLICATION_JSON))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.length()", is(2)))
@@ -63,10 +64,47 @@ class CourseControllerTest {
         NewCourseRequest newCourseRequest = new NewCourseRequest("java-2", "Java Collections", "Java Collections: Lists, Sets, Maps and more.");
 
         mockMvc.perform(post("/courses")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonMapper.writeValueAsString(newCourseRequest)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonMapper.writeValueAsString(newCourseRequest)))
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", "/courses/java-2"));
     }
 
+    @Test
+    void not_found_when_course_does_not_exist() throws Exception {
+        mockMvc.perform(get("/courses/non-existent")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void bad_request_when_course_already_added() throws Exception {
+        courseRepository.save(new Course("java-1", "Java OO", "Java and Object Orientation: Encapsulation, Inheritance and Polymorphism."));
+
+        NewCourseRequest newCourseRequest = new NewCourseRequest("java-1", "Java OO", "Java and Object Orientation: Encapsulation, Inheritance and Polymorphism.");
+
+        mockMvc.perform(post("/courses")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonMapper.writeValueAsString(newCourseRequest)))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void no_content_when_no_courses_added() throws Exception {
+
+        mockMvc.perform(get("/courses")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void bad_request_when_no_course_code_provided() throws Exception {
+        NewCourseRequest newCourseRequest = new NewCourseRequest("", "Java Collections", "Java Collections: Lists, Sets, Maps and more.");
+
+        mockMvc.perform(post("/courses")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonMapper.writeValueAsString(newCourseRequest)))
+                .andExpect(status().isBadRequest());
+    }
 }
