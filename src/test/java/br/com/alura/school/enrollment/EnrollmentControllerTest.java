@@ -54,7 +54,7 @@ class EnrollmentControllerTest {
     }
 
     @Test
-    void should_not_allow_duplication_of_enrollment() throws Exception {
+    void bad_request_when_user_already_enrolled() throws Exception {
         Course course = courseRepository.save(new Course("java-1", "Java OO", "Java and Object Orientation: Encapsulation, Inheritance and Polymorphism."));
 
         User user = userRepository.save(new User("alex", "alex@email.com"));
@@ -106,7 +106,7 @@ class EnrollmentControllerTest {
     }
 
     @Test
-    void should_retrieve_no_content_for_no_enrolled_users() throws Exception {
+    void no_content_when_no_enrolled_users() throws Exception {
         mockMvc.perform(get("/courses/enroll/report")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNoContent());

@@ -49,7 +49,7 @@ class EnrollmentController {
         List<EnrollmentResponse> enrolments = enrollmentRepository.generateEnrollmentsReport();
 
         if (enrolments.isEmpty()) {
-            throw new ResponseStatusException(NO_CONTENT, format("No enrolled users"));
+            throw new ResponseStatusException(NO_CONTENT, "no enrollment");
         }
 
         return ResponseEntity.ok(enrolments);
