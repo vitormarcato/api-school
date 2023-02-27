@@ -15,5 +15,11 @@ class EnrollmentResponse {
         this.enrollments = enrollments;
     }
 
+    public String getEmail() {
+        return email;
+    }
 
+    public Long getEnrollments() {
+        return enrollments;
+    }
 }
