@@ -5,6 +5,7 @@ import br.com.alura.school.course.CourseRepository;
 import br.com.alura.school.user.User;
 import br.com.alura.school.user.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -13,12 +14,14 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDate;
+import java.util.Arrays;
+
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -41,29 +44,35 @@ class EnrollmentControllerTest {
 
     @Test
     void should_add_new_enrollment() throws Exception {
-        courseRepository.save(new Course("java-1", "Java OO", "Java and Object Orientation: Encapsulation, Inheritance and Polymorphism."));
+        enrollmentData();
 
-        userRepository.save(new User("alex", "alex@email.com"));
+        NewEnrollmentRequest newEnrollmentRequest = new NewEnrollmentRequest("bob");
 
-        NewEnrollmentRequest newEnrollmentRequest = new NewEnrollmentRequest("alex");
-
-        mockMvc.perform(post("/courses/java-1/enroll")
+        mockMvc.perform(post("/courses/spring-1/enroll")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonMapper.writeValueAsString(newEnrollmentRequest)))
                 .andExpect(status().isCreated());
     }
 
     @Test
+    void should_add_new_enrollment_with_right_date() throws Exception {
+        LocalDate date = LocalDate.now();
+        enrollmentData();
+
+        Course course = courseRepository.getOne(1L);
+        User user = userRepository.getOne(1L);
+
+        Enrollment enrollment = new Enrollment(course, user);
+
+        Assertions.assertThat(enrollment.getEnrolmmentDate().isEqual(date));
+    }
+
+    @Test
     void bad_request_when_user_already_enrolled() throws Exception {
-        Course course = courseRepository.save(new Course("java-1", "Java OO", "Java and Object Orientation: Encapsulation, Inheritance and Polymorphism."));
-
-        User user = userRepository.save(new User("alex", "alex@email.com"));
-
-        enrollmentRepository.save(new Enrollment(course, user));
-
+        enrollmentData();
         NewEnrollmentRequest newEnrollmentRequest = new NewEnrollmentRequest("alex");
 
-        mockMvc.perform(post("/courses/java-1/enroll")
+        mockMvc.perform(post("/courses/spring-1/enroll")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonMapper.writeValueAsString(newEnrollmentRequest)))
                 .andDo(print())
@@ -72,28 +81,7 @@ class EnrollmentControllerTest {
 
     @Test
     void should_retrieve_enrollments_quantity_grouped_by_user_email() throws Exception {
-        courseRepository.save(new Course("spring-1", "Spring Basics", "Spring Core and Spring MVC."));
-        courseRepository.save(new Course("spring-2", "Spring Boot", "Spring Boot"));
-
-        userRepository.save(new User("alex", "alex@email.com"));
-        userRepository.save(new User("ana", "ana@email.com"));
-
-        NewEnrollmentRequest newEnrollmentRequestAlex = new NewEnrollmentRequest("alex");
-        NewEnrollmentRequest newEnrollmentRequestAna = new NewEnrollmentRequest("ana");
-
-        mockMvc.perform(post("/courses/spring-1/enroll")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonMapper.writeValueAsString(newEnrollmentRequestAna)));
-
-        mockMvc.perform(post("/courses/spring-1/enroll")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonMapper.writeValueAsString(newEnrollmentRequestAlex)));
-
-        mockMvc.perform(post("/courses/spring-2/enroll")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonMapper.writeValueAsString(newEnrollmentRequestAlex)));
-
-
+        enrollmentData();
         mockMvc.perform(get("/courses/enroll/report")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -110,6 +98,23 @@ class EnrollmentControllerTest {
         mockMvc.perform(get("/courses/enroll/report")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNoContent());
+    }
+
+    private void enrollmentData() {
+        Course c1 = new Course("spring-1", "Spring Basics", "Spring Core and Spring MVC.");
+        Course c2 = new Course("spring-2", "Spring Boot", "Spring Boot");
+        Course c3 = new Course("java-1", "Java OO", "Java and Object Orientation: Encapsulation, Inheritance and Polymorphism.");
+        courseRepository.saveAll(Arrays.asList(c1, c2, c3));
+
+        User u1 = new User("alex", "alex@email.com");
+        User u2 = new User("ana", "ana@email.com");
+        User u3 = new User("bob", "bob@email.com");
+        userRepository.saveAll(Arrays.asList(u1, u2, u3));
+
+        Enrollment e1 = new Enrollment(c1, u1);
+        Enrollment e2 = new Enrollment(c2, u1);
+        Enrollment e3 = new Enrollment(c2, u2);
+        enrollmentRepository.saveAll(Arrays.asList(e1, e2, e3));
     }
 
 }
